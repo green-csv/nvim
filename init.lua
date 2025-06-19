@@ -2,7 +2,6 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.mouse = 'a'
 vim.opt.clipboard = 'unnamedplus'
-
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 vim.opt.smartindent = true
@@ -13,7 +12,13 @@ vim.opt.scrolloff = 8        -- Keep cursor away from screen edge
 vim.opt.signcolumn = "yes"   -- Always show sign column (prevents text shifting)
 
 vim.g.mapleader = ' '
-vim.o.showtabline = 0
+
+-- Highlight yanked text
+vim.api.nvim_create_autocmd('TextYankPost', {
+  callback = function()
+    vim.highlight.on_yank { higroup = 'IncSearch', timeout = 150 }
+  end,
+})
 
 
 -- lazy.nvim bootstrap (only needed once)
@@ -25,6 +30,7 @@ if not vim.loop.fs_stat(lazypath) then
   })
 end
 vim.opt.rtp:prepend(lazypath)
+
 
 
 local status_ok, lazy = pcall(require, "lazy")
@@ -84,12 +90,14 @@ if status_ok then
               i = {
                 ["<C-j>"] = "move_selection_next",
                 ["<C-k>"] = "move_selection_previous",
-                ["<C-d>"] = require("telescope.actions").delete_buffer,
+                ["<C-d>"] = require("telescope.actions")
+                    .delete_buffer,
               },
               n = {
                 ["<C-j>"] = "move_selection_next",
                 ["<C-k>"] = "move_selection_previous",
-                ["<C-d>"] = require("telescope.actions").delete_buffer,
+                ["<C-d>"] = require("telescope.actions")
+                    .delete_buffer,
               },
             },
             vimgrep_arguments = {
@@ -103,7 +111,6 @@ if status_ok then
               '--hidden',
               '--glob', '!.git/*'
             },
-            file_ignore_patterns = { "node_modules", ".git/" },
           },
           pickers = {
             oldfiles = {
@@ -143,8 +150,8 @@ if status_ok then
             prompt_title = "Recent & Frecency",
             finder = finders.new_table({
               results = {
-                { "📁 Recent Files", "oldfiles" },
-                { "🕘 Frecency", "frecency" },
+                { "Recent Files", "oldfiles" },
+                { "Frecency",     "frecency" },
               },
               entry_maker = function(entry)
                 return {
@@ -157,7 +164,8 @@ if status_ok then
             sorter = conf.generic_sorter({}),
             attach_mappings = function(_, map)
               map("i", "<CR>", function(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
+                local selection = action_state
+                    .get_selected_entry()
                 actions.close(prompt_bufnr)
                 if selection.value == "oldfiles" then
                   builtin.oldfiles()
@@ -176,6 +184,69 @@ if status_ok then
           { desc = "Open buffers" })
         vim.keymap.set("n", "<leader>fh", builtin.help_tags,
           { desc = "Search help tags" })
+      end,
+    },
+    {            -- core LSP
+      "neovim/nvim-lspconfig",
+      opts = {}, -- keep your other opts here
+      config = function()
+        local lsp = require("lspconfig")
+        local cmp_caps = require("cmp_nvim_lsp").default_capabilities()
+        local function on_attach(client, bufnr)
+          -- keep your inlay-hint toggle
+          if client.server_capabilities.inlayHintProvider then
+            vim.lsp.inlay_hint.enable(true, bufnr)
+          end
+          -- omnifunc: <C-x><C-o>
+          vim.bo[bufnr].omnifunc = "v:lua.vim.lsp.omnifunc"
+        end
+        ---------------------------------------------------------------------------
+        -- 1.  tsserver  – TypeScript, TSX, JavaScript
+        ---------------------------------------------------------------------------
+        lsp.vtsls.setup({
+          capabilities = cmp_caps,
+          on_attach = on_attach,
+          settings = {
+            typescript = {                                                     -- applies to *.ts, *.tsx
+              inlayHints = {                                                   -- official ts-ls knobs  [oai_citation:1‡github.com](https://github.com/MysticalDevil/inlay-hints.nvim?utm_source=chatgpt.com)
+                includeInlayParameterNameHints                        = "all", -- "none"|"literals"|"all"
+                includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+                includeInlayFunctionParameterTypeHints                = true,
+                includeInlayVariableTypeHints                         = true,
+                includeInlayVariableTypeHintsWhenTypeMatchesName      = false,
+                includeInlayPropertyDeclarationTypeHints              = true,
+                includeInlayFunctionLikeReturnTypeHints               = true,
+                includeInlayEnumMemberValueHints                      = true,
+              },
+            },
+            javascript = { -- same switches for *.js, *.jsx
+              inlayHints = vim.deepcopy(
+                require("lspconfig.util").ts
+                .inlay_hints_default -- clone above table
+              ),
+            },
+          },
+        })
+        ---------------------------------------------------------------------------
+        -- 2.  lua-ls  – Lua files
+        ---------------------------------------------------------------------------
+        lsp.lua_ls.setup({
+          capabilities = cmp_caps,
+          on_attach = on_attach,
+          settings = {
+            Lua = {
+              hint = {                  -- lua-ls inlay block  [oai_citation:2‡github.com](https://github.com/josa42/coc-lua?utm_source=chatgpt.com)
+                enable     = true,      -- master switch
+                arrayIndex = "Auto",    -- "Auto"|"Disable"|"Enable"
+                await      = true,      -- show `await` where needed
+                paramName  = "All",     -- "Disable"|"All"|"Literal"
+                paramType  = true,      -- show param types
+                semicolon  = "Disable", -- virtual ‘;’ hints
+                setType    = true,      -- show type at assignments
+              },
+            },
+          },
+        })
       end,
     },
     {
@@ -210,17 +281,15 @@ if status_ok then
             ["<C-v>"] = function(state)
               local node = state.tree:get_node()
               if node and node.path then
-                vim.cmd("vsplit " .. vim.fn.fnameescape(node.path))
-                require("neo-tree.command").execute({ action = "close" }) -- optional auto-close tree
+                vim.cmd("vsplit " ..
+                  vim.fn.fnameescape(node.path))
+                require("neo-tree.command").execute({
+                  action =
+                  "close"
+                }) -- optional auto-close tree
               end
             end,
-            position = "float", -- Makes it appear centered
-            popup = {
-              size = {
-                height = "90%",
-                width = "60%",
-              },
-            },
+            position = "float",
           },
           filesystem = {
             follow_current_file = { enabled = true },
@@ -239,7 +308,10 @@ if status_ok then
             {
               event = "file_opened",
               handler = function()
-                require("neo-tree.command").execute({ action = "close" })
+                require("neo-tree.command").execute({
+                  action =
+                  "close"
+                })
               end,
             },
           },
@@ -265,7 +337,6 @@ if status_ok then
       },
       config = function()
         require('lspconfig').lua_ls.setup {}
-        vim.lsp.enable('vtsls')
       end
     },
     {
@@ -282,17 +353,41 @@ if status_ok then
         vim.cmd("colorscheme onenord")
       end,
     },
-    { "nvim-treesitter/nvim-treesitter", branch = 'master', lazy = false, build = ":TSUpdate" },
     {
-      "nvim-treesitter/nvim-treesitter-refactor"
-    },
-    {
-      "simrat39/symbols-outline.nvim",
-      config = function()
-        require("symbols-outline").setup()
-        vim.keymap.set("n", "<leader>so", "<cmd>SymbolsOutline<CR>",
-          { desc = "Toggle Symbol Outline" })
-      end,
+      "nvim-treesitter/nvim-treesitter",
+      dependencies = {
+        "nvim-treesitter/nvim-treesitter-refactor"
+      },
+      branch = 'master',
+      lazy = false,
+      build = ":TSUpdate",
+      opts = {
+        highlight = { enable = true },
+        refactor = {
+          highlight_definitions = {
+            enable = true,
+            clear_on_cursor_move = true,
+          },
+          highlight_current_scope = { enable = true },
+          smart_rename = {
+            enable = true,
+            keymaps = {
+              smart_rename = "grr",
+            }
+          },
+          navigation = {
+            enable = true,
+            keymaps = {
+              goto_definition      = "gnd", -- go to definition of symbol [oai_citation:22‡github.com](https://github.com/nvim-treesitter/nvim-treesitter-refactor#:~:text=false%60.%20keymaps%20%3D%20,)
+              list_definitions     = "gnD", -- list all definitions in file
+              list_definitions_toc = "gO",  -- list definitions in a TOC (quickfix)
+              goto_next_usage      = "<a-*>",
+              goto_previous_usage  = "<a-#>",
+            }
+          }
+        }
+        -- ... other options ...
+      }
     },
     {
       "williamboman/mason.nvim",
@@ -356,6 +451,45 @@ if status_ok then
       end,
     },
     {
+      "hrsh7th/nvim-cmp",
+      event = "InsertEnter",
+      dependencies = {
+        "L3MON4D3/LuaSnip",         -- snippets engine
+        "saadparwaiz1/cmp_luasnip", -- snippet source
+        "hrsh7th/cmp-nvim-lsp",     -- LSP source
+        "hrsh7th/cmp-buffer",       -- words in open buffers
+        "hrsh7th/cmp-path",         -- filesystem paths
+        "windwp/nvim-autopairs",    -- you already have it
+      },
+      config = function()
+        local cmp = require("cmp")
+
+        cmp.setup({
+          completion = { completeopt = "menu,menuone,noinsert" },
+          snippet = {
+            expand = function(args) require("luasnip").lsp_expand(args.body) end,
+          },
+          mapping = cmp.mapping.preset.insert({
+            ["<Tab>"]     = cmp.mapping.select_next_item(),         -- cycle
+            ["<S-Tab>"]   = cmp.mapping.select_prev_item(),
+            ["<CR>"]      = cmp.mapping.confirm({ select = true }), -- accept
+            ["<C-Space>"] = cmp.mapping.complete(),                 -- force menu
+          }),
+          sources = cmp.config.sources({
+            { name = "nvim_lsp" },
+            { name = "luasnip" },
+          }, {
+            { name = "buffer" },
+            { name = "path" },
+          }),
+        })
+
+        require("nvim-autopairs").setup {}
+        local cmp_autopairs = require("nvim-autopairs.completion.cmp")
+        cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
+      end,
+    },
+    {
       "NeogitOrg/neogit",
       dependencies = {
         "nvim-lua/plenary.nvim",
@@ -363,12 +497,14 @@ if status_ok then
         "nvim-telescope/telescope.nvim",
       },
       config = function()
-        require("neogit").setup()
+        local neogit = require("neogit")
+        neogit.setup {}
       end,
     },
     {
       "akinsho/bufferline.nvim",
       version = "*",
+      enabled = false,
       dependencies = "nvim-tree/nvim-web-devicons",
       config = function()
         require("bufferline").setup({
@@ -404,18 +540,21 @@ if status_ok then
         -- Keymaps
         local persistence = require("persistence")
 
-        vim.keymap.set("n", "<leader>qs", function() persistence.load() end, {
-          desc = "Restore session for current dir"
-        })
+        vim.keymap.set("n", "<leader>qs",
+          function() persistence.load() end, {
+            desc = "Restore session for current dir"
+          })
 
-        vim.keymap.set("n", "<leader>ql", function() persistence.load_last() end,
+        vim.keymap.set("n", "<leader>ql",
+          function() persistence.load_last() end,
           {
             desc = "Restore last session"
           })
 
-        vim.keymap.set("n", "<leader>qd", function() persistence.stop() end, {
-          desc = "Don't save session for this dir"
-        })
+        vim.keymap.set("n", "<leader>qd",
+          function() persistence.stop() end, {
+            desc = "Don't save session for this dir"
+          })
       end,
     },
 
@@ -481,3 +620,11 @@ vim.api.nvim_create_user_command('ToggleBufferline', function()
     vim.o.showtabline = 2 -- show bufferline
   end
 end, { desc = "Toggle bufferline (showtabline)" })
+
+-- bind K to show LSP hover information
+vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Show hover info' })
+
+vim.keymap.set("n", "<leader>th", function()
+  local buf = vim.api.nvim_get_current_buf()
+  vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+end, { desc = "Toggle inlay hints" })
