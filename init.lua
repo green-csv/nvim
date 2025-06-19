@@ -13,6 +13,7 @@ vim.opt.scrolloff = 8        -- Keep cursor away from screen edge
 vim.opt.signcolumn = "yes"   -- Always show sign column (prevents text shifting)
 
 vim.g.mapleader = ' '
+vim.o.showtabline = 0
 
 
 -- lazy.nvim bootstrap (only needed once)
@@ -32,8 +33,20 @@ if status_ok then
     {
       "nvimdev/dashboard-nvim",
       event = "VimEnter",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
+      dependencies = {
+        "nvim-tree/nvim-web-devicons",
+        "nvim-telescope/telescope.nvim",
+        "ahmedkhalf/project.nvim",
+      },
       config = function()
+        require("project_nvim").setup({
+          detection_methods = { "lsp", "pattern" },
+          patterns = { ".git", "package.json", "Makefile" },
+          silent_chdir = false,
+        })
+        -- then load the Telescope extension
+        require("telescope").load_extension("projects")
+
         require("dashboard").setup({
           theme = "hyper",
           config = {
@@ -41,7 +54,7 @@ if status_ok then
             shortcut = {
               { desc = "󰊳 Update", group = "Function", action = "Lazy update", key = "u" },
               { desc = " Files", group = "Label", action = "Telescope find_files", key = "f" },
-              { desc = " Projects", group = "DiagnosticHint", action = "Telescope project", key = "p" },
+              { desc = " Projects", group = "DiagnosticHint", action = "Telescope projects", key = "p" },
             },
           },
         })
@@ -52,10 +65,17 @@ if status_ok then
       tag = "0.1.5",
       dependencies = {
         "nvim-lua/plenary.nvim",
+        "ahmedkhalf/project.nvim",
         "nvim-telescope/telescope-frecency.nvim",
         "debugloop/telescope-undo.nvim",
       },
       config = function()
+        require("project_nvim").setup({
+          detection_methods = { "lsp", "pattern" },
+          patterns = { ".git", "package.json", "Makefile" },
+          silent_chdir = false,
+        })
+
         local telescope = require("telescope")
         telescope.setup({
           defaults = {
@@ -79,14 +99,11 @@ if status_ok then
               '--with-filename',
               '--line-number',
               '--column',
-              '--smart-case', -- ignore case unless you type uppercase
-              '--hidden',     -- search in hidden files
+              '--smart-case',
+              '--hidden',
               '--glob', '!.git/*'
             },
             file_ignore_patterns = { "node_modules", ".git/" },
-            prompt_prefix = "🔍 ",
-            -- layout_config = { horizontal = { preview_width = 0.6 } },
-            borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰' },
           },
           pickers = {
             oldfiles = {
@@ -103,16 +120,15 @@ if status_ok then
               show_scores = true,
               show_unindexed = false,
               ignore_patterns = { "*.git/*", "*/tmp/*" },
-              disable_devicons = false,
             },
           },
         })
         telescope.load_extension("frecency")
         telescope.load_extension("undo")
+        telescope.load_extension("projects")
 
         local builtin = require("telescope.builtin")
         local extensions = telescope.extensions
-
 
         vim.keymap.set("n", "<leader>ff", function()
           local pickers = require("telescope.pickers")
@@ -160,6 +176,24 @@ if status_ok then
           { desc = "Open buffers" })
         vim.keymap.set("n", "<leader>fh", builtin.help_tags,
           { desc = "Search help tags" })
+      end,
+    },
+    {
+      "ahmedkhalf/project.nvim",
+      dependencies = { "nvim-telescope/telescope.nvim" },
+      config = function()
+        require("project_nvim").setup({
+          -- detect projects based on git root or LSP workspace
+          detection_methods = { "lsp", "pattern" },
+          -- patterns to identify project root
+          patterns = { ".git", "package.json", "Makefile", "Jusfile" },
+          -- don’t change your cwd automatically
+          silent_chdir = false,
+          -- scope: workspace (false) vs global (true)
+          scope_chdir = nil,
+        })
+        -- register the extension with Telescope
+        require("telescope").load_extension("projects")
       end,
     },
     {
@@ -217,7 +251,22 @@ if status_ok then
       end,
     },
     {
-      'neovim/nvim-lspconfig', -- core LSP client support
+      'neovim/nvim-lspconfig',
+      dependencies = {
+        {
+          "folke/lazydev.nvim",
+          ft = "lua", -- only load on lua files
+          opts = {
+            library = {
+              { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+            },
+          },
+        },
+      },
+      config = function()
+        require('lspconfig').lua_ls.setup {}
+        vim.lsp.enable('vtsls')
+      end
     },
     {
       "rmehri01/onenord.nvim",
@@ -233,17 +282,7 @@ if status_ok then
         vim.cmd("colorscheme onenord")
       end,
     },
-    {
-      "nvim-treesitter/nvim-treesitter",
-      build = ":TSUpdate",
-      config = function()
-        require("nvim-treesitter.configs").setup({
-          highlight = { enable = true },
-          indent = { enable = true },
-          ensure_installed = { "javascript", "typescript", "lua", "json", "html", "css" },
-        })
-      end,
-    },
+    { "nvim-treesitter/nvim-treesitter", branch = 'master', lazy = false, build = ":TSUpdate" },
     {
       "nvim-treesitter/nvim-treesitter-refactor"
     },
@@ -263,36 +302,6 @@ if status_ok then
       end,
     },
     {
-      "williamboman/mason-lspconfig.nvim",
-      config = function()
-        local mason_lspconfig = require("mason-lspconfig")
-        local lspconfig = require("lspconfig")
-
-        mason_lspconfig.setup({
-          ensure_installed = { "tsserver", "lua_ls", "jsonls" },
-        })
-
-        -- Set up each LSP manually
-        for _, server in ipairs(mason_lspconfig.get_installed_servers()) do
-          lspconfig[server].setup({})
-        end
-      end,
-    },
-    {
-      "karb94/neoscroll.nvim",
-      config = function()
-        require("neoscroll").setup({})
-
-        local t = {}
-        t["<C-d>"] = { "scroll", { "vim.wo.scroll", "true", "100" } }  -- half page down
-        t["<C-u>"] = { "scroll", { "-vim.wo.scroll", "true", "100" } } -- half page up
-        t["<C-e>"] = { "scroll", { "3", "true", "30" } }               -- scroll window down 1 line
-        t["<C-y>"] = { "scroll", { "-3", "true", "30" } }              -- scroll window up 1 line
-
-        require("neoscroll.config").set_mappings(t)
-      end,
-    },
-    {
       "nvim-lualine/lualine.nvim",
       dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
@@ -301,6 +310,14 @@ if status_ok then
             theme = "onenord",
             section_separators = "",
             component_separators = "",
+          },
+          sections = {
+            lualine_a = { "mode" },
+            lualine_b = { "branch" },
+            lualine_c = { "filename" }, -- keep only the file name here
+            lualine_x = {},             -- ← remove the filetype component
+            lualine_y = {},
+            lualine_z = { "location" },
           },
         })
       end,
@@ -312,50 +329,6 @@ if status_ok then
       end,
     },
     {
-      "numToStr/Comment.nvim",
-      config = function()
-        require("Comment").setup()
-      end,
-    },
-    {
-      "hrsh7th/nvim-cmp",
-      dependencies = {
-        "hrsh7th/cmp-nvim-lsp",
-        "hrsh7th/cmp-buffer",
-        "hrsh7th/cmp-path",
-        "hrsh7th/cmp-cmdline",
-        "L3MON4D3/LuaSnip",
-        "saadparwaiz1/cmp_luasnip",
-        "rafamadriz/friendly-snippets",
-      },
-      config = function()
-        local cmp = require("cmp")
-        local luasnip = require("luasnip")
-
-        require("luasnip.loaders.from_vscode").lazy_load()
-
-        cmp.setup({
-          snippet = {
-            expand = function(args)
-              luasnip.lsp_expand(args.body)
-            end,
-          },
-          mapping = cmp.mapping.preset.insert({
-            ["<Tab>"] = cmp.mapping.select_next_item(),
-            ["<S-Tab>"] = cmp.mapping.select_prev_item(),
-            ["<CR>"] = cmp.mapping.confirm({ select = true }),
-            ["<C-Space>"] = cmp.mapping.complete(),
-          }),
-          sources = cmp.config.sources({
-            { name = "nvim_lsp" },
-            { name = "luasnip" },
-            { name = "buffer" },
-            { name = "path" },
-          }),
-        })
-      end,
-    },
-    {
       "gpanders/editorconfig.nvim"
     },
     {
@@ -364,17 +337,24 @@ if status_ok then
       config = function()
         require("ibl").setup({
           indent = {
-            char = "│", -- You can change to "▏", "┊", or "┆"
+            char = "┊", -- You can change to "▏", "┊", or "┆"
           },
           scope = {
             enabled = true,
             show_start = false,
             show_end = false,
           },
+          exclude = {
+            filetypes = {
+              "alpha",          -- dashboard.nvim’s filetype
+              "dashboard",      -- older variants
+              "neo-tree",       -- Neo-tree sidebar
+              "TelescopePrompt" -- Telescope’s prompt window
+            },
+          },
         })
       end,
     },
-
     {
       "NeogitOrg/neogit",
       dependencies = {
@@ -386,69 +366,6 @@ if status_ok then
         require("neogit").setup()
       end,
     },
-
-    {
-      "SmiteshP/nvim-navic",
-      dependencies = { "neovim/nvim-lspconfig" },
-      config = function()
-        local navic = require("nvim-navic")
-        vim.g.navic = navic
-      end,
-    },
-
-    {
-      "folke/trouble.nvim",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
-      config = function()
-        require("trouble").setup({
-          use_diagnostic_signs = true,
-        })
-        vim.keymap.set("n", "<leader>xx", "<cmd>TroubleToggle<cr>",
-          { desc = "Toggle Trouble Panel" })
-      end,
-    },
-
-    {
-      "NvChad/nvim-colorizer.lua",
-      config = function()
-        require("colorizer").setup({
-          filetypes = { "css", "scss", "html", "javascript", "typescript", "lua" },
-          user_default_options = {
-            RGB = true,
-            RRGGBB = true,
-            names = true,
-            tailwind = true,
-            mode = "background",
-          },
-        })
-      end,
-    },
-
-    {
-      "folke/zen-mode.nvim",
-      config = function()
-        require("zen-mode").setup({
-          window = {
-            width = 80, -- or 100, 120 based on your taste
-            options = {
-              number = false,
-              relativenumber = false,
-            },
-          },
-          plugins = {
-            options = {
-              enabled = true,
-              ruler = false,
-              showcmd = false,
-            },
-          },
-        })
-
-        vim.keymap.set("n", "<leader>z", "<cmd>ZenMode<CR>",
-          { desc = "Toggle Zen Mode" })
-      end,
-    },
-
     {
       "akinsho/bufferline.nvim",
       version = "*",
@@ -500,11 +417,10 @@ if status_ok then
           desc = "Don't save session for this dir"
         })
       end,
-    }
+    },
+
   })
 end
-
-vim.keymap.set({ "n", "i" }, "<C-s>", "<cmd>w<CR>", { desc = "Save file" })
 
 vim.cmd [[highlight IblIndent guifg=#3B4252]]
 
@@ -553,3 +469,15 @@ vim.api.nvim_create_autocmd("VimResized", {
   end,
   desc = "Auto-resize tabs and windows when the screen is resized",
 })
+-- Custom Command:: Filetype
+vim.api.nvim_create_user_command('Filetype', function()
+  vim.cmd('echo "Filetype: ' .. vim.bo.filetype .. '"')
+end, {})
+
+vim.api.nvim_create_user_command('ToggleBufferline', function()
+  if vim.o.showtabline == 2 then
+    vim.o.showtabline = 0 -- hide bufferline
+  else
+    vim.o.showtabline = 2 -- show bufferline
+  end
+end, { desc = "Toggle bufferline (showtabline)" })
