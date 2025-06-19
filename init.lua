@@ -20,7 +20,6 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
-
 -- lazy.nvim bootstrap (only needed once)
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
@@ -186,6 +185,15 @@ if status_ok then
           { desc = "Search help tags" })
       end,
     },
+    {
+      "S1M0N38/love2d.nvim",
+      event = "VeryLazy",
+      opts = {
+        debug_window_opts = {
+          split = "below"
+        }
+      },
+    },
     {            -- core LSP
       "neovim/nvim-lspconfig",
       opts = {}, -- keep your other opts here
@@ -195,7 +203,7 @@ if status_ok then
         local function on_attach(client, bufnr)
           -- keep your inlay-hint toggle
           if client.server_capabilities.inlayHintProvider then
-            vim.lsp.inlay_hint.enable(true, bufnr)
+            vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
           end
           -- omnifunc: <C-x><C-o>
           vim.bo[bufnr].omnifunc = "v:lua.vim.lsp.omnifunc"
