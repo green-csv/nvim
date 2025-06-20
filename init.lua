@@ -189,14 +189,26 @@ if status_ok then
       "S1M0N38/love2d.nvim",
       event = "VeryLazy",
       opts = {
+        restart_on_save = true,
         debug_window_opts = {
           split = "below"
         }
       },
     },
-    {            -- core LSP
+    { -- core LSP
       "neovim/nvim-lspconfig",
-      opts = {}, -- keep your other opts here
+      dependencies = {
+        "mason.nvim",
+        { "mason-org/mason-lspconfig.nvim", config = function() end },
+      },
+      opts = function()
+        local ret = {
+          inlay_hints = {
+            enable = true
+          }
+        }
+        return ret
+      end, -- keep your other opts here
       config = function()
         local lsp = require("lspconfig")
         local cmp_caps = require("cmp_nvim_lsp").default_capabilities()
@@ -215,8 +227,8 @@ if status_ok then
           capabilities = cmp_caps,
           on_attach = on_attach,
           settings = {
-            typescript = {                                                     -- applies to *.ts, *.tsx
-              inlayHints = {                                                   -- official ts-ls knobs  [oai_citation:1‡github.com](https://github.com/MysticalDevil/inlay-hints.nvim?utm_source=chatgpt.com)
+            typescript = {
+              inlayHints = {
                 includeInlayParameterNameHints                        = "all", -- "none"|"literals"|"all"
                 includeInlayParameterNameHintsWhenArgumentMatchesName = false,
                 includeInlayFunctionParameterTypeHints                = true,
@@ -326,8 +338,13 @@ if status_ok then
 
         })
 
-        vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<cr>",
-          { desc = "Toggle File Tree" })
+        vim.keymap.set("n", "<leader>e", function()
+          require("neo-tree.command").execute({
+            toggle = true,
+            reveal = true,
+            dir = vim.uv.cwd(),
+          })
+        end, { desc = " Neo-tree (toggle & reveal current file)" })
       end,
     },
     {
@@ -636,3 +653,12 @@ vim.keymap.set("n", "<leader>th", function()
   local buf = vim.api.nvim_get_current_buf()
   vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
 end, { desc = "Toggle inlay hints" })
+
+vim.diagnostic.config({
+  virtual_text = {
+    prefix = "■", -- ■ or any character you like
+    spacing = 4, -- how many spaces between code and message
+  },
+  signs = true, -- show gutter signs
+  underline = true, -- underline the problematic code
+})
