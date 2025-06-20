@@ -103,13 +103,13 @@ return {
         require("telescope.builtin").find_files {
           cwd = vim.fn.stdpath("config")
         }
-      end)
+      end, { desc = "find_files.config" })
 
       vim.keymap.set("n", "<leader>ep", function()
         require("telescope.builtin").find_files {
           cwd = vim.fs.joinpath(vim.fn.stdpath("data"), "lazy")
         }
-      end)
+      end,{ desc = "find_files.data" })
     end,
   },
   {
