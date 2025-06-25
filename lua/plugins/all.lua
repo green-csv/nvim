@@ -109,7 +109,7 @@ return {
         require("telescope.builtin").find_files {
           cwd = vim.fs.joinpath(vim.fn.stdpath("data"), "lazy")
         }
-      end,{ desc = "find_files.data" })
+      end, { desc = "find_files.data" })
     end,
   },
   {
@@ -201,28 +201,6 @@ return {
     end,
   },
   {
-    'neovim/nvim-lspconfig',
-    dependencies = {
-      "jose-elias-alvarez/typescript.nvim",
-      {
-        "folke/lazydev.nvim",
-        ft = "lua", -- only load on lua files
-        opts = {
-          library = {
-            { path = "${3rd}/luv/library", words = { "vim%.uv" } },
-          },
-        },
-      },
-    },
-    opts = {
-      inlay_hints = { enabled = true },
-    },
-    config = function()
-      require('lspconfig').lua_ls.setup {}
-      vim.lsp.inlay_hint.enable(true)
-    end,
-  },
-  {
     "rmehri01/onenord.nvim",
     priority = 1000, -- load early
     config = function()
@@ -292,7 +270,7 @@ return {
         lua = 210,
       },
       highlight = {
-        'RainbowDelimiterRed', -- darkest
+        'RainbowDelimiterYellow', -- darkest
         'RainbowDelimiterViolet',
         'RainbowDelimiterBlue',
         'RainbowDelimiterOrange',
@@ -336,45 +314,6 @@ return {
           },
         },
       })
-    end,
-  },
-  {
-    "hrsh7th/nvim-cmp",
-    event = "InsertEnter",
-    dependencies = {
-      "L3MON4D3/LuaSnip",         -- snippets engine
-      "saadparwaiz1/cmp_luasnip", -- snippet source
-      "hrsh7th/cmp-nvim-lsp",     -- LSP source
-      "hrsh7th/cmp-buffer",       -- words in open buffers
-      "hrsh7th/cmp-path",         -- filesystem paths
-      "windwp/nvim-autopairs",    -- you already have it
-    },
-    config = function()
-      local cmp = require("cmp")
-
-      cmp.setup({
-        completion = { completeopt = "menu,menuone,noinsert" },
-        snippet = {
-          expand = function(args) require("luasnip").lsp_expand(args.body) end,
-        },
-        mapping = cmp.mapping.preset.insert({
-          ["<Tab>"]     = cmp.mapping.select_next_item(),         -- cycle
-          ["<S-Tab>"]   = cmp.mapping.select_prev_item(),
-          ["<CR>"]      = cmp.mapping.confirm({ select = true }), -- accept
-          ["<C-Space>"] = cmp.mapping.complete(),                 -- force menu
-        }),
-        sources = cmp.config.sources({
-          { name = "nvim_lsp" },
-          { name = "luasnip" },
-        }, {
-          { name = "buffer" },
-          { name = "path" },
-        }),
-      })
-
-      require("nvim-autopairs").setup {}
-      local cmp_autopairs = require("nvim-autopairs.completion.cmp")
-      cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
     end,
   },
   {
