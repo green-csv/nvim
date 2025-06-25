@@ -285,8 +285,9 @@ return {
   },
   {
     "folke/which-key.nvim",
-    config = function()
-      require("which-key").setup({})
+    opts = {},
+    config = function(_, opts)
+      require("which-key").setup(opts)
     end,
   },
   {
@@ -354,4 +355,13 @@ return {
       })
     end,
   },
+  {
+    "folke/lazydev.nvim",
+    ft = "lua",
+    opts = {
+      library = {
+        { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+      },
+    },
+  }
 }
