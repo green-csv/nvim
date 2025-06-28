@@ -11,6 +11,7 @@ vim.opt.cursorline = true    -- Highlight the current line
 vim.opt.scrolloff = 8        -- Keep cursor away from screen edge
 vim.opt.signcolumn = "yes"   -- Always show sign column (prevents text shifting)
 
+vim.g.netrw_liststyle = 3
 
 -- Highlight yanked text
 vim.api.nvim_create_autocmd('TextYankPost', {

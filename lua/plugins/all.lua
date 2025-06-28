@@ -1,4 +1,3 @@
---x = {A} * e ^ -x
 return {
   {
     "nvimdev/dashboard-nvim",
@@ -141,66 +140,6 @@ return {
     end,
   },
   {
-    "nvim-neo-tree/neo-tree.nvim",
-    branch = "v3.x",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "nvim-tree/nvim-web-devicons",
-      "MunifTanjim/nui.nvim",
-    },
-    config = function()
-      require("neo-tree").setup({
-        window = {
-          ["<C-v>"] = function(state)
-            local node = state.tree:get_node()
-            if node and node.path then
-              vim.cmd("vsplit " ..
-                vim.fn.fnameescape(node.path))
-              require("neo-tree.command").execute({
-                action =
-                "close"
-              }) -- optional auto-close tree
-            end
-          end,
-          position = "float",
-        },
-        filesystem = {
-          follow_current_file = { enabled = true },
-          filtered_items = {
-            visible = true,
-            hide_dotfiles = false,
-          },
-          use_libuv_file_watcher = true,
-        },
-        default_component_configs = {
-          preview = {
-            use_float = false, -- keep preview inside the main window
-          },
-        },
-        event_handlers = {
-          {
-            event = "file_opened",
-            handler = function()
-              require("neo-tree.command").execute({
-                action =
-                "close"
-              })
-            end,
-          },
-        },
-
-      })
-
-      vim.keymap.set("n", "<leader>e", function()
-        require("neo-tree.command").execute({
-          toggle = true,
-          reveal = true,
-          dir = vim.uv.cwd(),
-        })
-      end, { desc = " Neo-tree" })
-    end,
-  },
-  {
     "rmehri01/onenord.nvim",
     priority = 1000, -- load early
     config = function()
@@ -316,53 +255,6 @@ return {
         },
       })
     end,
-  },
-  {
-    "NeogitOrg/neogit",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim",
-      "nvim-telescope/telescope.nvim",
-    },
-    opts = {
-      disable_hint = false,
-      graph_style = "ascii"
-    },
-    config = function(_, opts)
-      local neogit = require("neogit")
-      neogit.setup(opts)
-    end,
-  },
-  {
-    "akinsho/bufferline.nvim",
-    version = "*",
-    enabled = true,
-    dependencies = "nvim-tree/nvim-web-devicons",
-    config = function()
-      require("bufferline").setup({
-        options = {
-          numbers = "buffer_id",
-          mode = "buffers",
-          diagnostics = "nvim_lsp",
-          show_buffer_close_icons = false,
-          show_close_icon = false,
-          separator_style = "thin",
-          max_name_length = 200, -- Set a high limit for name display
-          max_prefix_length = 30,
-          tab_size = 30,
-          truncate_names = false,
-        },
-      })
-    end,
-  },
-  {
-    "folke/lazydev.nvim",
-    ft = "lua",
-    opts = {
-      library = {
-        { path = "${3rd}/luv/library", words = { "vim%.uv" } },
-      },
-    },
   },
   {
     'windwp/nvim-autopairs',
