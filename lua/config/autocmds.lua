@@ -9,11 +9,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
     -- defaults:
     -- https://neovim.io/doc/user/news-0.11.html#_defaults
 
+    vim.lsp.inlay_hint.enable(true)
     map("gl", vim.diagnostic.open_float, "Open Diagnostic Float")
     map("K", vim.lsp.buf.hover, "Hover Documentation")
     map("gs", vim.lsp.buf.signature_help, "Signature Documentation")
-    map("gD", vim.lsp.buf.declaration, "Goto Declaration")
-    map("gd", vim.lsp.buf.definition, "Goto Definition")
     map("<leader>la", vim.lsp.buf.code_action, "Code Action")
     map("<leader>lr", vim.lsp.buf.rename, "Rename all references")
     map("<leader>lf", vim.lsp.buf.format, "Format")

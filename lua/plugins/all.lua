@@ -1,36 +1,5 @@
 return {
   {
-    "nvimdev/dashboard-nvim",
-    event = "VimEnter",
-    dependencies = {
-      "nvim-tree/nvim-web-devicons",
-      "nvim-telescope/telescope.nvim",
-      "ahmedkhalf/project.nvim",
-    },
-    opts = {
-      detection_methods = { "lsp", "pattern" },
-      patterns = { ".git", "package.json", "Makefile" },
-      silent_chdir = false,
-    },
-    config = function(_, opts)
-      require("project_nvim").setup(opts)
-      -- then load the Telescope extension
-      require("telescope").load_extension("projects")
-
-      require("dashboard").setup({
-        theme = "hyper",
-        config = {
-          week_header = { enable = true },
-          shortcut = {
-            { desc = "󰊳 Update", group = "Function", action = "Lazy update", key = "u" },
-            { desc = " Files", group = "Label", action = "Telescope find_files", key = "f" },
-            { desc = " Projects", group = "DiagnosticHint", action = "Telescope projects", key = "p" },
-          },
-        },
-      })
-    end,
-  },
-  {
     "nvim-telescope/telescope.nvim",
     tag = "0.1.5",
     dependencies = {
@@ -92,9 +61,6 @@ return {
       vim.keymap.set("n", "<leader>fg", builtin.live_grep,
         { desc = "live_grep" })
 
-      vim.keymap.set("n", "<leader>fb", builtin.buffers,
-        { desc = "buffers" })
-
       vim.keymap.set("n", "<leader>fh", builtin.help_tags,
         { desc = "help_tags" })
 
@@ -110,16 +76,6 @@ return {
         }
       end, { desc = "find_files.data" })
     end,
-  },
-  {
-    "S1M0N38/love2d.nvim",
-    event = "VeryLazy",
-    opts = {
-      restart_on_save = true,
-      debug_window_opts = {
-        split = "below"
-      }
-    },
   },
   {
     "ahmedkhalf/project.nvim",
@@ -186,7 +142,6 @@ return {
           }
         }
       }
-      -- ... other options ...
     }
   },
   {
@@ -231,30 +186,6 @@ return {
   },
   {
     "gpanders/editorconfig.nvim"
-  },
-  {
-    "lukas-reineke/indent-blankline.nvim",
-    main = "ibl",
-    config = function()
-      require("ibl").setup({
-        indent = {
-          char = "┊", -- You can change to "▏", "┊", or "┆"
-        },
-        scope = {
-          enabled = true,
-          show_start = false,
-          show_end = false,
-        },
-        exclude = {
-          filetypes = {
-            "alpha",          -- dashboard.nvim’s filetype
-            "dashboard",      -- older variants
-            "neo-tree",       -- Neo-tree sidebar
-            "TelescopePrompt" -- Telescope’s prompt window
-          },
-        },
-      })
-    end,
   },
   {
     'windwp/nvim-autopairs',

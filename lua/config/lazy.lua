@@ -16,7 +16,7 @@ vim.g.netrw_liststyle = 3
 -- Highlight yanked text
 vim.api.nvim_create_autocmd('TextYankPost', {
   callback = function()
-    vim.highlight.on_yank { higroup = 'IncSearch', timeout = 150 }
+    vim.highlight.on_yank { higroup = 'IncSearch', timeout = 50 }
   end,
 })
 
@@ -87,7 +87,7 @@ vim.api.nvim_create_autocmd("InsertLeave", {
   end,
 })
 -- Escape terminal mode back to normal
-vim.keymap.set("t", "<Esc><Esc>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 
 
 vim.api.nvim_create_autocmd("VimResized", {
@@ -97,8 +97,8 @@ vim.api.nvim_create_autocmd("VimResized", {
   desc = "Auto-resize tabs and windows when the screen is resized",
 })
 -- Custom Command:: Filetype
-vim.api.nvim_create_user_command('Filetype', function()
-  vim.cmd('echo "Filetype: ' .. vim.bo.filetype .. '"')
+vim.api.nvim_create_user_command('Dashboard', function()
+  Snacks.dashboard()
 end, {})
 
 vim.api.nvim_create_user_command('ToggleBufferline', function()
@@ -111,10 +111,6 @@ end, { desc = "Toggle bufferline (showtabline)" })
 
 -- bind K to show LSP hover information
 vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Show hover info' })
-
-vim.keymap.set("n", "<leader>th", function()
-  vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
-end, { desc = "Toggle inlay hints" })
 
 vim.diagnostic.config({
   virtual_text = {
